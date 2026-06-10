@@ -1,122 +1,75 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import heroImg from './assets/hero.png'
-import './App.css'
+import { useState, useEffect } from "react";
+import Login from "./components/Login";
+import ModuloLibros from "./components/ModuloLibros";
+import "./App.css";
+import ModuloUsuarios from "./components/ModuloUsuarios";
 
 function App() {
-  const [count, setCount] = useState(0)
+    const [usuarioActivo, setUsuarioActivo] = useState(null);
+    const [vistaActiva, setVistaActiva] = useState("inicio"); // Controla qué pantalla vemos
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
+    useEffect(() => {
+        if (!localStorage.getItem("usuarios_biblioteca")) {
+            const usuariosIniciales = [
+                { id: 1, nombre: "Admin", correo: "admin@upana.edu", password: "123", rol: "Administrador", identificacion: "ADMIN01" },
+                { id: 2, nombre: "Gestor", correo: "gestor@upana.edu", password: "123", rol: "Gestor", identificacion: "GEST01" }
+            ];
+            localStorage.setItem("usuarios_biblioteca", JSON.stringify(usuariosIniciales));
+        }
+
+        const sesion = localStorage.getItem("sesion_activa");
+        if (sesion) {
+            setUsuarioActivo(JSON.parse(sesion));
+        }
+    }, []);
+
+    const iniciarSesion = (usuario) => {
+        setUsuarioActivo(usuario);
+        localStorage.setItem("sesion_activa", JSON.stringify(usuario));
+        setVistaActiva("inicio");
+    };
+
+    const cerrarSesion = () => {
+        setUsuarioActivo(null);
+        localStorage.removeItem("sesion_activa");
+    };
+
+    return (
         <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+            {!usuarioActivo ? (
+                <Login onLogin={iniciarSesion} />
+            ) : (
+                <div>
+                    {/* Barra de navegación superior */}
+                    <nav style={{ backgroundColor: "#1e293b", padding: "15px", color: "white", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <h2 style={{ margin: 0, color: "white" }}>Buena Ventura</h2>
+                        <div style={{ display: "flex", gap: "15px" }}>
+                            <button onClick={() => setVistaActiva("inicio")} style={{ background: "transparent", border: "none", color: vistaActiva === "inicio" ? "#12cccc" : "white", cursor: "pointer", fontWeight: "bold" }}>Inicio</button>
+                            <button onClick={() => setVistaActiva("libros")} style={{ background: "transparent", border: "none", color: vistaActiva === "libros" ? "#12cccc" : "white", cursor: "pointer", fontWeight: "bold" }}>Libros</button>
+                            {<button>Usuarios</button>}
+                            {/* <button>Préstamos</button> */}
+                        </div>
+                        <div>
+                            <span style={{ marginRight: "15px" }}>👤 {usuarioActivo.nombre} ({usuarioActivo.rol})</span>
+                            <button onClick={cerrarSesion} style={{ padding: "5px 10px", backgroundColor: "#ef4444" }}>Salir</button>
+                        </div>
+                    </nav>
 
-      <div className="ticks"></div>
+                    {/* Contenido de la pantalla */}
+                    {vistaActiva === "inicio" && (
+                        <div style={{ textAlign: 'center', padding: '50px', color: 'white' }}>
+                            <h1>Bienvenido al Sistema, {usuarioActivo.nombre}</h1>
+                            <p>Utiliza el menú superior para navegar por los módulos.</p>
+                        </div>
+                    )}
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
+                    {vistaActiva === "libros" && <ModuloLibros />}
+                    {vistaActiva === "usuarios" && <ModuloUsuarios />}
+                    
+                </div>
+            )}
         </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+    );
 }
 
-export default App
+export default App;
