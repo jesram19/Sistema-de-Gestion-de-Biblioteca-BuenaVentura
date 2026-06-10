@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 function Login({ onLogin }) {
+    // Guardamos lo que el usuario escribe en los inputs
     const [correo, setCorreo] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -8,20 +9,23 @@ function Login({ onLogin }) {
     const manejarSubmit = (e) => {
         e.preventDefault();
 
+        // No dejamos pasar si algún campo está vacío
         if (correo.trim() === "" || password.trim() === "") {
             setError("Todos los campos son obligatorios");
             return;
         }
 
+        // Traemos los usuarios del sistema que guardamos en localStorage
         const usuarios = JSON.parse(localStorage.getItem("usuarios_biblioteca")) || [];
-        
+
+        // Buscamos uno que coincida en correo y contraseña
         const usuarioEncontrado = usuarios.find(
             (u) => u.correo === correo && u.password === password
         );
 
         if (usuarioEncontrado) {
             setError("");
-            onLogin(usuarioEncontrado); 
+            onLogin(usuarioEncontrado); // Avisamos a App que ya inició sesión
         } else {
             setError("Correo o contraseña incorrectos");
         }
@@ -31,7 +35,7 @@ function Login({ onLogin }) {
         <div className="contenedor">
             <h2>Biblioteca Buena Ventura</h2>
             {error && <p className="mensaje-error">{error}</p>}
-            
+
             <form className="formulario" onSubmit={manejarSubmit}>
                 <input
                     type="email"

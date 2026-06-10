@@ -3,12 +3,18 @@ import Login from "./components/Login";
 import ModuloLibros from "./components/ModuloLibros";
 import "./App.css";
 import ModuloUsuarios from "./components/ModuloUsuarios";
+import ModuloPrestamos from "./components/ModuloPrestamos";
+import ModuloReportes from "./components/ModuloReportes";
 
 function App() {
+    // Guarda el usuario que tiene la sesión abierta (null si nadie ha entrado)
     const [usuarioActivo, setUsuarioActivo] = useState(null);
-    const [vistaActiva, setVistaActiva] = useState("inicio"); // Controla qué pantalla vemos
+    // Controla qué módulo se está mostrando en pantalla
+    const [vistaActiva, setVistaActiva] = useState("inicio");
 
     useEffect(() => {
+        // La primera vez que se abre la app creamos los usuarios del sistema
+        // si todavía no existen en localStorage
         if (!localStorage.getItem("usuarios_biblioteca")) {
             const usuariosIniciales = [
                 { id: 1, nombre: "Admin", correo: "admin@upana.edu", password: "123", rol: "Administrador", identificacion: "ADMIN01" },
@@ -17,12 +23,14 @@ function App() {
             localStorage.setItem("usuarios_biblioteca", JSON.stringify(usuariosIniciales));
         }
 
+        // Si había una sesión guardada la recuperamos para no pedir login de nuevo
         const sesion = localStorage.getItem("sesion_activa");
         if (sesion) {
             setUsuarioActivo(JSON.parse(sesion));
         }
     }, []);
 
+    // Se llama desde el Login cuando las credenciales son correctas
     const iniciarSesion = (usuario) => {
         setUsuarioActivo(usuario);
         localStorage.setItem("sesion_activa", JSON.stringify(usuario));
@@ -36,6 +44,7 @@ function App() {
 
     return (
         <div>
+            {/* Si no hay nadie con sesión mostramos el login, si no, el sistema */}
             {!usuarioActivo ? (
                 <Login onLogin={iniciarSesion} />
             ) : (
@@ -46,8 +55,12 @@ function App() {
                         <div style={{ display: "flex", gap: "15px" }}>
                             <button onClick={() => setVistaActiva("inicio")} style={{ background: "transparent", border: "none", color: vistaActiva === "inicio" ? "#12cccc" : "white", cursor: "pointer", fontWeight: "bold" }}>Inicio</button>
                             <button onClick={() => setVistaActiva("libros")} style={{ background: "transparent", border: "none", color: vistaActiva === "libros" ? "#12cccc" : "white", cursor: "pointer", fontWeight: "bold" }}>Libros</button>
-                            {<button>Usuarios</button>}
-                            {/* <button>Préstamos</button> */}
+                            <button onClick={() => setVistaActiva("usuarios")} style={{ background: "transparent", border: "none", color: vistaActiva === "usuarios" ? "#12cccc" : "white", cursor: "pointer", fontWeight: "bold" }}>Usuarios</button>
+                            <button onClick={() => setVistaActiva("prestamos")} style={{ background: "transparent", border: "none", color: vistaActiva === "prestamos" ? "#12cccc" : "white", cursor: "pointer", fontWeight: "bold" }}>Préstamos</button>
+                            {/* La reportería solo aparece si el rol es Administrador */}
+                            {usuarioActivo.rol === "Administrador" && (
+                                <button onClick={() => setVistaActiva("reportes")} style={{ background: "transparent", border: "none", color: vistaActiva === "reportes" ? "#12cccc" : "white", cursor: "pointer", fontWeight: "bold" }}>Reportería</button>
+                            )}
                         </div>
                         <div>
                             <span style={{ marginRight: "15px" }}>👤 {usuarioActivo.nombre} ({usuarioActivo.rol})</span>
@@ -55,7 +68,7 @@ function App() {
                         </div>
                     </nav>
 
-                    {/* Contenido de la pantalla */}
+                    {/* Según la vista activa mostramos el módulo correspondiente */}
                     {vistaActiva === "inicio" && (
                         <div style={{ textAlign: 'center', padding: '50px', color: 'white' }}>
                             <h1>Bienvenido al Sistema, {usuarioActivo.nombre}</h1>
@@ -63,9 +76,12 @@ function App() {
                         </div>
                     )}
 
-                    {vistaActiva === "libros" && <ModuloLibros />}
-                    {vistaActiva === "usuarios" && <ModuloUsuarios />}
-                    
+                    {vistaActiva === "libros" && <ModuloLibros rolUsuario={usuarioActivo.rol} />}
+                    {vistaActiva === "usuarios" && <ModuloUsuarios rolUsuario={usuarioActivo.rol} />}
+                    {vistaActiva === "prestamos" && <ModuloPrestamos />}
+                    {/* Doble protección: aunque se forzara la vista, sin rol Admin no se renderiza */}
+                    {vistaActiva === "reportes" && usuarioActivo.rol === "Administrador" && <ModuloReportes />}
+
                 </div>
             )}
         </div>

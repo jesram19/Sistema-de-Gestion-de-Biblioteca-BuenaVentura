@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
 
-function ModuloLibros() {
+function ModuloLibros({ rolUsuario }) {
     const [libros, setLibros] = useState([]);
     const [libroEditando, setLibroEditando] = useState(null);
     const [error, setError] = useState("");
 
-    // Estados del formulario
+    // Un estado por cada campo del formulario
     const [titulo, setTitulo] = useState("");
     const [autor, setAutor] = useState("");
     const [editorial, setEditorial] = useState("");
@@ -14,11 +14,11 @@ function ModuloLibros() {
     const [cantidad, setCantidad] = useState("");
 
     useEffect(() => {
+        // Cargamos los libros guardados, y si no hay ninguno dejamos un par de ejemplo
         const datosGuardados = localStorage.getItem("libros_biblioteca");
         if (datosGuardados) {
             setLibros(JSON.parse(datosGuardados));
         } else {
-            // Inyectamos algunos libros base usando tu estructura de Biblioteca.json
             const librosBase = [
                 { id: 101, titulo: "Breve historia del tiempo", autor: "Stephen Hawking", editorial: "Bantam Books", anio: "1988", isbn: "978-0553380163", cantidad: 5 },
                 { id: 102, titulo: "El señor presidente", autor: "Miguel Angel Asturias", editorial: "Losada", anio: "1946", isbn: "978-8437602513", cantidad: 3 }
@@ -28,7 +28,7 @@ function ModuloLibros() {
         }
     }, []);
 
-    // Llenar el formulario si vamos a editar
+    // Cuando elegimos editar un libro, rellenamos el formulario con sus datos
     useEffect(() => {
         if (libroEditando) {
             setTitulo(libroEditando.titulo);
@@ -43,36 +43,38 @@ function ModuloLibros() {
     const manejarSubmit = (e) => {
         e.preventDefault();
 
-        // Reglas de negocio del PDF
+        // Reglas de negocio del PDF: título, autor e ISBN son obligatorios
         if (titulo.trim() === "" || autor.trim() === "" || isbn.trim() === "") {
             setError("El título, autor e ISBN son obligatorios.");
             return;
         }
 
+        // La cantidad no puede ser negativa
         if (Number(cantidad) < 0) {
             setError("La cantidad disponible no puede ser negativa.");
             return;
         }
 
-        // Validar ISBN duplicado
+        // No se permiten dos libros con el mismo ISBN
         const isbnDuplicado = libros.find(
             (l) => l.isbn === isbn && l.id !== (libroEditando ? libroEditando.id : null)
         );
-
         if (isbnDuplicado) {
             setError("Ya existe un libro registrado con este ISBN.");
             return;
         }
 
-        setError(""); // Limpiamos errores si todo está bien
+        setError(""); // Si todo está bien limpiamos el mensaje de error
 
         const nuevoLibro = {
+            // Si editamos conservamos el id; si es nuevo generamos uno con la fecha
             id: libroEditando ? libroEditando.id : Date.now(),
             titulo, autor, editorial, anio, isbn, cantidad: Number(cantidad)
         };
 
         let nuevaLista;
         if (libroEditando) {
+            // Reemplazamos el libro editado dentro de la lista
             nuevaLista = libros.map((l) => l.id === nuevoLibro.id ? nuevoLibro : l);
             setLibroEditando(null);
         } else {
@@ -82,13 +84,14 @@ function ModuloLibros() {
         setLibros(nuevaLista);
         localStorage.setItem("libros_biblioteca", JSON.stringify(nuevaLista));
 
-        // Limpiar formulario
+        // Dejamos el formulario en blanco
         setTitulo(""); setAutor(""); setEditorial(""); setAnio(""); setIsbn(""); setCantidad("");
     };
 
     const eliminarLibro = (id) => {
+        // Pedimos confirmación antes de borrar
         const confirmacion = window.confirm("¿Seguro que deseas eliminar este libro?");
-        if(confirmacion) {
+        if (confirmacion) {
             const nuevaLista = libros.filter((l) => l.id !== id);
             setLibros(nuevaLista);
             localStorage.setItem("libros_biblioteca", JSON.stringify(nuevaLista));
@@ -98,13 +101,13 @@ function ModuloLibros() {
     return (
         <div style={{ padding: "20px" }}>
             <h2 style={{ color: "white", textAlign: "center" }}>Gestión de Libros</h2>
-            
+
             <div className="contenedor" style={{ marginTop: "20px" }}>
                 <h3 style={{ textAlign: "center", color: "#2a5298" }}>
                     {libroEditando ? "Editar Libro" : "Registrar Nuevo Libro"}
                 </h3>
                 {error && <p className="mensaje-error">{error}</p>}
-                
+
                 <form className="formulario" onSubmit={manejarSubmit}>
                     <input type="text" placeholder="Título *" value={titulo} onChange={(e) => setTitulo(e.target.value)} />
                     <input type="text" placeholder="Autor *" value={autor} onChange={(e) => setAutor(e.target.value)} />
@@ -112,7 +115,7 @@ function ModuloLibros() {
                     <input type="text" placeholder="Editorial" value={editorial} onChange={(e) => setEditorial(e.target.value)} />
                     <input type="number" placeholder="Año de Publicación" value={anio} onChange={(e) => setAnio(e.target.value)} />
                     <input type="number" placeholder="Cantidad Disponible *" value={cantidad} onChange={(e) => setCantidad(e.target.value)} />
-                    
+
                     <button type="submit" style={{ backgroundColor: libroEditando ? "#12cccc" : "" }}>
                         {libroEditando ? "Actualizar Libro" : "Guardar Libro"}
                     </button>
@@ -139,7 +142,10 @@ function ModuloLibros() {
                                 </div>
                                 <div style={{ display: "flex", gap: "10px" }}>
                                     <button onClick={() => setLibroEditando(libro)} style={{ backgroundColor: "#f5a623", padding: "8px" }}>Editar</button>
-                                    <button onClick={() => eliminarLibro(libro.id)} style={{ backgroundColor: "#ef4444", padding: "8px" }}>Eliminar</button>
+                                    {/* El botón de eliminar solo lo ve el Administrador */}
+                                    {rolUsuario === "Administrador" && (
+                                        <button onClick={() => eliminarLibro(libro.id)} style={{ backgroundColor: "#ef4444", padding: "8px" }}>Eliminar</button>
+                                    )}
                                 </div>
                             </li>
                         ))}

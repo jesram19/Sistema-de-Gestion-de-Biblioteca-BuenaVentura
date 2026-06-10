@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 
-function ModuloUsuarios() {
+function ModuloUsuarios({ rolUsuario }) {
     const [clientes, setClientes] = useState([]);
     const [clienteEditando, setClienteEditando] = useState(null);
     const [error, setError] = useState("");
@@ -13,11 +13,11 @@ function ModuloUsuarios() {
     const [identificacion, setIdentificacion] = useState("");
 
     useEffect(() => {
+        // Cargamos los clientes guardados o dejamos dos de ejemplo la primera vez
         const datosGuardados = localStorage.getItem("clientes_biblioteca");
         if (datosGuardados) {
             setClientes(JSON.parse(datosGuardados));
         } else {
-            // Usuarios base de tu archivo Biblioteca.json
             const clientesBase = [
                 { id: 201, nombre: "Juan", apellido: "Perez", correo: "juan.perez@gmail.com", telefono: "5555-1111", identificacion: "DPI-101" },
                 { id: 202, nombre: "Maria", apellido: "Garcia", correo: "maria.garcia@gmail.com", telefono: "5555-2222", identificacion: "DPI-102" }
@@ -27,6 +27,7 @@ function ModuloUsuarios() {
         }
     }, []);
 
+    // Si vamos a editar, llenamos el formulario con los datos del cliente
     useEffect(() => {
         if (clienteEditando) {
             setNombre(clienteEditando.nombre);
@@ -40,30 +41,29 @@ function ModuloUsuarios() {
     const manejarSubmit = (e) => {
         e.preventDefault();
 
-        // 1. Validar campos obligatorios
+        // Nombre e identificación son obligatorios según el PDF
         if (nombre.trim() === "" || identificacion.trim() === "") {
             setError("El nombre y el número de identificación son obligatorios.");
             return;
         }
 
-        // 2. Validar formato de correo básico con una expresión regular sencilla
+        // Validación sencilla del formato de correo (solo si escribieron algo)
         const regexCorreo = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         if (correo.trim() !== "" && !regexCorreo.test(correo)) {
             setError("Por favor, ingrese un correo electrónico válido.");
             return;
         }
 
-        // 3. Validar Identificación única
+        // La identificación tiene que ser única
         const idDuplicado = clientes.find(
             (c) => c.identificacion === identificacion && c.id !== (clienteEditando ? clienteEditando.id : null)
         );
-
         if (idDuplicado) {
             setError("Ya existe un cliente registrado con ese número de identificación.");
             return;
         }
 
-        setError(""); 
+        setError("");
 
         const nuevoCliente = {
             id: clienteEditando ? clienteEditando.id : Date.now(),
@@ -81,13 +81,13 @@ function ModuloUsuarios() {
         setClientes(nuevaLista);
         localStorage.setItem("clientes_biblioteca", JSON.stringify(nuevaLista));
 
-        // Limpiar formulario
+        // Limpiamos el formulario
         setNombre(""); setApellido(""); setCorreo(""); setTelefono(""); setIdentificacion("");
     };
 
     const eliminarCliente = (id) => {
         const confirmacion = window.confirm("¿Seguro que deseas eliminar este cliente?");
-        if(confirmacion) {
+        if (confirmacion) {
             const nuevaLista = clientes.filter((c) => c.id !== id);
             setClientes(nuevaLista);
             localStorage.setItem("clientes_biblioteca", JSON.stringify(nuevaLista));
@@ -97,20 +97,20 @@ function ModuloUsuarios() {
     return (
         <div style={{ padding: "20px" }}>
             <h2 style={{ color: "white", textAlign: "center" }}>Gestión de Usuarios (Clientes)</h2>
-            
+
             <div className="contenedor" style={{ marginTop: "20px" }}>
                 <h3 style={{ textAlign: "center", color: "#2a5298" }}>
                     {clienteEditando ? "Editar Cliente" : "Registrar Nuevo Cliente"}
                 </h3>
                 {error && <p className="mensaje-error">{error}</p>}
-                
+
                 <form className="formulario" onSubmit={manejarSubmit}>
                     <input type="text" placeholder="Nombre *" value={nombre} onChange={(e) => setNombre(e.target.value)} />
                     <input type="text" placeholder="Apellido" value={apellido} onChange={(e) => setApellido(e.target.value)} />
                     <input type="text" placeholder="Número de Identificación (Ej. DPI) *" value={identificacion} onChange={(e) => setIdentificacion(e.target.value)} />
                     <input type="email" placeholder="Correo Electrónico" value={correo} onChange={(e) => setCorreo(e.target.value)} />
                     <input type="text" placeholder="Teléfono" value={telefono} onChange={(e) => setTelefono(e.target.value)} />
-                    
+
                     <button type="submit" style={{ backgroundColor: clienteEditando ? "#12cccc" : "" }}>
                         {clienteEditando ? "Actualizar Cliente" : "Guardar Cliente"}
                     </button>
@@ -137,7 +137,10 @@ function ModuloUsuarios() {
                                 </div>
                                 <div style={{ display: "flex", gap: "10px" }}>
                                     <button onClick={() => setClienteEditando(cliente)} style={{ backgroundColor: "#f5a623", padding: "8px" }}>Editar</button>
-                                    <button onClick={() => eliminarCliente(cliente.id)} style={{ backgroundColor: "#ef4444", padding: "8px" }}>Eliminar</button>
+                                    {/* Eliminar solo disponible para el Administrador */}
+                                    {rolUsuario === "Administrador" && (
+                                        <button onClick={() => eliminarCliente(cliente.id)} style={{ backgroundColor: "#ef4444", padding: "8px" }}>Eliminar</button>
+                                    )}
                                 </div>
                             </li>
                         ))}
